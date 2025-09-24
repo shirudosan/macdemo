@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Bond Duration Calculator (Demo)</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- Load SheetJS from CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>📊 Bond Duration Calculator</h1>
+    <p>Upload an Excel file with columns:<br>
+       <b>Bond Name | Coupon Rate (%) | Yield (%) | Face Value | Years to Maturity</b>
+    </p>
+
+    <input type="file" id="fileInput" />
+    <button id="processBtn">Process File</button>
+
+    <div id="results"></div>
+
+    <p class="teaser">✨ Want to see strategy testing in action? Coming soon…</p>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
