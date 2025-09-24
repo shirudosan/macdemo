@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Bond Strategy Analysis</title>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+  <h2>Bond Strategy Simulator</h2>
+
+  <!-- File upload -->
+  <input type="file" id="fileInput" /><br><br>
+
+  <!-- Manual entry -->
+  <textarea id="manualInput" rows="5" cols="80"
+    placeholder="Bond Name | Coupon Rate (%) | Yield (%) | Face Value | Years to Maturity&#10;Example: BondA | 5 | 4 | 1000 | 10"></textarea>
+  <br><br>
+
+  <button id="calcBtn">Run Analysis</button>
+
+  <!-- Output -->
+  <div id="output" style="margin-top:20px; white-space:pre;"></div>
+  <div id="aiOutput" style="margin-top:20px; border:1px solid #ccc; padding:10px;"></div>
+
+  <script>
+    // Duration calculation
+    function calculateDuration(couponRate, yieldRate, faceValue, years) {
+      const y = yieldRate / 100;
+      const c = couponRate / 100 * faceValue;
+      let pvTotal = 0, weightedSum = 0;
+
+      for (let t = 1; t <= years; t++) {
+        const cf = (t === years) ? c + faceValue : c;
+        const pv = cf / Math.pow(1 + y, t);
+        pvTotal += pv;
+        weightedSum += t * pv;
+      }
+      return weightedSum / pvTotal;
+    }
+
+    // Parse manual input
+    function parseManualInput() {
+      const lines = document.getElementById("manualInput").value.trim().split("\n");
+      const bonds = [];
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        const parts = line.split("|").map(s => s.trim());
+        if (parts.length === 5) {
+          bonds.push({
+            name: parts[0],
+            coupon: parseFloat(parts[1]),
+            yield: parseFloat(parts[2]),
+            face: parseFloat(parts[3]),
+            years: parseInt(parts[4])
+          });
+        }
+      }
+      return bonds;
+    }
+
+    // Parse Excel file
+    function parseExcel(file, callback) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+        const bonds = [];
+        for (let i = 1; i < rows.length; i++) {
+          const r = rows[i];
+          if (r.length >= 5) {
+            bonds.push({
+              name: r[0],
+              coupon: parseFloat(r[1]),
+              yield: parseFloat(r[2]),
+              face: parseFloat(r[3]),
+              years: parseInt(r[4])
+            });
+          }
+        }
+        callback(bonds);
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    // On button click
+    document.getElementById("calcBtn").addEventListener("click", function() {
+      const outputDiv = document.getElementById("output");
+      const aiDiv = document.getElementById("aiOutput");
+      outputDiv.textContent = "Processing...\n";
+      aiDiv.textContent = "";
+
+      const manualBonds = parseManualInput();
+      const fileInput = document.getElementById("fileInput");
+
+      if (fileInput.files.length > 0) {
+        parseExcel(fileInput.files[0], (fileBonds) => {
+          const bonds = manualBonds.concat(fileBonds);
+          runAnalysis(bonds);
+        });
+      } else {
+        runAnalysis(manualBonds);
+      }
+    });
+
+    // Run calculations and AI step
+    function runAnalysis(bonds) {
+      const outputDiv = document.getElementById("output");
+      const aiDiv = document.getElementById("aiOutput");
+
+      if (bonds.length === 0) {
+        outputDiv.textContent = "No bond data provided.";
+        return;
+      }
+
+      // --- Calculation ---
+      let totalValue = 0;
+      let text = "Bond Analysis Results:\n\n";
+      bonds.forEach(b => {
+        const dur = calculateDuration(b.coupon, b.yield, b.face, b.years);
+        const value = b.face; // simplified portfolio value per bond
+        totalValue += value;
+        text += `${b.name}: Duration = ${dur.toFixed(2)} years | Face = ${value}\n`;
+      });
+      text += `\nPortfolio Value (approx): ${totalValue}\n`;
+      outputDiv.textContent = text;
+
+      // --- AI prompt prep ---
+      const prompt = `
+Here is a bond portfolio:
+${JSON.stringify(bonds, null, 2)}
+
+Please provide a detailed "what-if" strategy analysis.
+- Compare 'do nothing' vs. active strategies
+- Explain duration-based risk
+- Show portfolio value change under different interest rate scenarios
+      `;
+
+      // === Option A: Call your backend LLM ===
+      // fetch("/api/askAI", { method:"POST", body: JSON.stringify({ prompt }) })
+      //   .then(r => r.json())
+      //   .then(data => { aiDiv.textContent = data.output; });
+
+      // === Option B: Mock AI response (for demo only) ===
+      aiDiv.textContent = "AI Strategy Analysis (mock):\n\nIf interest rates rise by 1%, portfolio value could drop by ~"
+        + (totalValue * 0.05).toFixed(0)
+        + ". Active strategy (shorter duration bonds) reduces risk compared to 'do nothing'.";
+    }
+  </script>
+</body>
+</html>
