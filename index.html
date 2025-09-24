@@ -2,53 +2,122 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Bond Duration Calculator (Demo)</title>
-  <link rel="stylesheet" href="style.css">
+  <title>Bond Duration Calculator</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 </head>
 <body>
-  <div class="container">
-    <h1>📊 Bond Duration Calculator</h1>
-    <p>You can either upload an Excel file OR enter bond details manually below.</p>
+  <h2>Bond Duration Calculator</h2>
 
-    <!-- File Upload -->
-    <h2>Upload Excel File</h2>
-    <input type="file" id="fileInput" />
-    <button id="processBtn">Process File</button>
+  <!-- File upload -->
+  <input type="file" id="fileInput" /><br><br>
 
-    <hr>
+  <!-- Manual entry -->
+  <textarea id="manualInput" rows="5" cols="80"
+    placeholder="Bond Name | Coupon Rate (%) | Yield (%) | Face Value | Years to Maturity&#10;Example: BondA | 5 | 4 | 1000 | 10"></textarea>
+  <br><br>
 
-    <!-- Manual Entry -->
-    <h2>Manual Bond Entry</h2>
-    <form id="bondForm">
-      <input type="text" id="name" placeholder="Bond Name" required>
-      <input type="number" step="0.01" id="coupon" placeholder="Coupon Rate (%)" required>
-      <input type="number" step="0.01" id="yield" placeholder="Yield (%)" required>
-      <input type="number" step="0.01" id="face" placeholder="Face Value" required>
-      <input type="number" id="years" placeholder="Years to Maturity" required>
-      <button type="submit">Add Bond</button>
-    </form>
+  <button id="calcBtn">Calculate Durations</button>
 
-    <table id="manualTable">
-      <thead>
-        <tr>
-          <th>Bond Name</th>
-          <th>Coupon (%)</th>
-          <th>Yield (%)</th>
-          <th>Face Value</th>
-          <th>Years</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+  <!-- Output -->
+  <div id="output" style="margin-top:20px; white-space:pre;"></div>
 
-    <button id="calculateBtn">Calculate Durations</button>
+  <script>
+    // Duration calculation function
+    function calculateDuration(couponRate, yieldRate, faceValue, years) {
+      const y = yieldRate / 100;
+      const c = couponRate / 100 * faceValue;
+      let pvTotal = 0;
+      let weightedSum = 0;
 
-    <div id="results"></div>
+      for (let t = 1; t <= years; t++) {
+        const cf = (t === years) ? c + faceValue : c;
+        const pv = cf / Math.pow(1 + y, t);
+        pvTotal += pv;
+        weightedSum += t * pv;
+      }
+      return weightedSum / pvTotal;
+    }
 
-    <p class="teaser">✨ Want to see strategy testing in action? Coming soon…</p>
-  </div>
+    // Parse manual input
+    function parseManualInput() {
+      const lines = document.getElementById("manualInput").value.trim().split("\n");
+      const bonds = [];
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        const parts = line.split("|").map(s => s.trim());
+        if (parts.length === 5) {
+          bonds.push({
+            name: parts[0],
+            coupon: parseFloat(parts[1]),
+            yield: parseFloat(parts[2]),
+            face: parseFloat(parts[3]),
+            years: parseInt(parts[4])
+          });
+        }
+      }
+      return bonds;
+    }
 
-  <script src="script.js"></script>
+    // Parse Excel file
+    function parseExcel(file, callback) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+        const bonds = [];
+        for (let i = 1; i < rows.length; i++) {
+          const r = rows[i];
+          if (r.length >= 5) {
+            bonds.push({
+              name: r[0],
+              coupon: parseFloat(r[1]),
+              yield: parseFloat(r[2]),
+              face: parseFloat(r[3]),
+              years: parseInt(r[4])
+            });
+          }
+        }
+        callback(bonds);
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    // On button click
+    document.getElementById("calcBtn").addEventListener("click", function() {
+      const outputDiv = document.getElementById("output");
+      outputDiv.textContent = "Processing...\n";
+
+      const manualBonds = parseManualInput();
+      const fileInput = document.getElementById("fileInput");
+
+      if (fileInput.files.length > 0) {
+        parseExcel(fileInput.files[0], (fileBonds) => {
+          const bonds = manualBonds.concat(fileBonds);
+          showResults(bonds);
+        });
+      } else {
+        showResults(manualBonds);
+      }
+    });
+
+    // Display results
+    function showResults(bonds) {
+      const outputDiv = document.getElementById("output");
+      if (bonds.length === 0) {
+        outputDiv.textContent = "No bond data provided.";
+        return;
+      }
+      let text = "Bond Duration Results:\n\n";
+      bonds.forEach(b => {
+        const dur = calculateDuration(b.coupon, b.yield, b.face, b.years);
+        text += `${b.name}: Duration = ${dur.toFixed(2)} years\n`;
+      });
+      outputDiv.textContent = text;
+    }
+  </script>
 </body>
 </html>
