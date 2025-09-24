@@ -145,23 +145,22 @@ Please provide a detailed "what-if" strategy analysis.
       //   .then(data => { aiDiv.textContent = data.output; });
       // === Call Netlify function ===
     // Call Netlify function
-    fetch("/.netlify/functions/askAI", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt })
-    })
-    .then(r => r.json())
-    .then(data => {
-        aiDiv.textContent = "Raw AI Response:\n\n" + JSON.stringify(data, null, 2);
-        if (data.output) {
-        aiDiv.textContent = "AI Analysis:\n\n" + data.output;
-        } else if (data.error) {
-        aiDiv.textContent = "Error from AI: " + data.error;
-        } else {
-        aiDiv.textContent = "No response from AI.";
-        }
-    })
-    .catch(err => { aiDiv.textContent = "Network Error: " + err; });
+fetch("/.netlify/functions/askAI", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ prompt })
+})
+  .then(r => r.json())
+  .then(data => {
+    if (data.output) {
+      aiDiv.textContent = "AI Analysis:\n\n" + data.output;
+    } else if (data.error) {
+      aiDiv.textContent = "Error from AI: " + data.error;
+    } else {
+      aiDiv.textContent = "No response from AI.";
+    }
+  })
+  .catch(err => { aiDiv.textContent = "Network Error: " + err; });
 
       // === Option B: Mock AI response (for demo only) ===
       // aiDiv.textContent = "AI Strategy Analysis (mock):\n\nIf interest rates rise by 1%, portfolio value could drop by ~"

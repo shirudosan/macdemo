@@ -10,19 +10,31 @@ export async function handler(event, context) {
       {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${process.env.HF_API_KEY}`,
+          "Authorization": `Bearer ${process.env.HF_API_KEY}`,  // set this in Netlify env vars
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ inputs: prompt })
+        body: JSON.stringify({
+          inputs: prompt,
+          parameters: {
+            max_new_tokens: 300,   // limit length so it returns quickly
+            temperature: 0.7       // creativity vs determinism
+          }
+        })
       }
     );
 
     const result = await response.json();
 
-    // For debugging: return full result
+    let output = "";
+    if (Array.isArray(result) && result[0]?.generated_text) {
+      output = result[0].generated_text;
+    } else {
+      output = JSON.stringify(result, null, 2); // fallback for debugging
+    }
+
     return {
       statusCode: 200,
-      body: JSON.stringify({ raw: result })
+      body: JSON.stringify({ output })
     };
 
   } catch (err) {
