@@ -152,6 +152,7 @@ Please provide a detailed "what-if" strategy analysis.
     })
     .then(r => r.json())
     .then(data => {
+        aiDiv.textContent = "Raw AI Response:\n\n" + JSON.stringify(data, null, 2);
         if (data.output) {
         aiDiv.textContent = "AI Analysis:\n\n" + data.output;
         } else if (data.error) {

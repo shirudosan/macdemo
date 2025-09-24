@@ -6,7 +6,7 @@ export async function handler(event, context) {
     const { prompt } = JSON.parse(event.body);
 
     const response = await fetch(
-      "https://api-inference.huggingface.co/models/google/flan-t5-base",
+      "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2",
       {
         method: "POST",
         headers: {
@@ -19,24 +19,10 @@ export async function handler(event, context) {
 
     const result = await response.json();
 
-    // Hugging Face sometimes returns an array, sometimes an object
-    let output = "";
-
-    if (Array.isArray(result)) {
-      // e.g., [{"generated_text": "blah"}]
-      output = result[0]?.generated_text || JSON.stringify(result);
-    } else if (result.generated_text) {
-      output = result.generated_text;
-    } else if (result[0]?.summary_text) {
-      // some summarization models
-      output = result[0].summary_text;
-    } else {
-      output = JSON.stringify(result, null, 2);
-    }
-
+    // For debugging: return full result
     return {
       statusCode: 200,
-      body: JSON.stringify({ output })
+      body: JSON.stringify({ raw: result })
     };
 
   } catch (err) {
