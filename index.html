@@ -4,18 +4,45 @@
   <meta charset="UTF-8">
   <title>Bond Duration Calculator (Demo)</title>
   <link rel="stylesheet" href="style.css">
-  <!-- Load SheetJS from CDN -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 </head>
 <body>
   <div class="container">
     <h1>📊 Bond Duration Calculator</h1>
-    <p>Upload an Excel file with columns:<br>
-       <b>Bond Name | Coupon Rate (%) | Yield (%) | Face Value | Years to Maturity</b>
-    </p>
+    <p>You can either upload an Excel file OR enter bond details manually below.</p>
 
+    <!-- File Upload -->
+    <h2>Upload Excel File</h2>
     <input type="file" id="fileInput" />
     <button id="processBtn">Process File</button>
+
+    <hr>
+
+    <!-- Manual Entry -->
+    <h2>Manual Bond Entry</h2>
+    <form id="bondForm">
+      <input type="text" id="name" placeholder="Bond Name" required>
+      <input type="number" step="0.01" id="coupon" placeholder="Coupon Rate (%)" required>
+      <input type="number" step="0.01" id="yield" placeholder="Yield (%)" required>
+      <input type="number" step="0.01" id="face" placeholder="Face Value" required>
+      <input type="number" id="years" placeholder="Years to Maturity" required>
+      <button type="submit">Add Bond</button>
+    </form>
+
+    <table id="manualTable">
+      <thead>
+        <tr>
+          <th>Bond Name</th>
+          <th>Coupon (%)</th>
+          <th>Yield (%)</th>
+          <th>Face Value</th>
+          <th>Years</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <button id="calculateBtn">Calculate Durations</button>
 
     <div id="results"></div>
 

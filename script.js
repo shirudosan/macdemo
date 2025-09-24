@@ -1,4 +1,6 @@
-// Handle file upload + parsing
+let bonds = [];
+
+// ========== Excel Upload ==========
 document.getElementById("processBtn").addEventListener("click", () => {
   const fileInput = document.getElementById("fileInput");
   if (!fileInput.files.length) {
@@ -15,8 +17,7 @@ document.getElementById("processBtn").addEventListener("click", () => {
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
-    // Skip header row
-    const bonds = rows.slice(1).map(row => ({
+    bonds = rows.slice(1).map(row => ({
       name: row[0],
       coupon: parseFloat(row[1]),
       yield: parseFloat(row[2]),
@@ -24,14 +25,58 @@ document.getElementById("processBtn").addEventListener("click", () => {
       years: parseInt(row[4])
     }));
 
-    const results = bonds.map(calcDurations);
-    displayResults(results);
+    alert("Excel bonds loaded! Click 'Calculate Durations' to see results.");
   };
 
   reader.readAsArrayBuffer(file);
 });
 
-// Calculate Macaulay and Modified Duration
+// ========== Manual Entry ==========
+document.getElementById("bondForm").addEventListener("submit", e => {
+  e.preventDefault();
+
+  const bond = {
+    name: document.getElementById("name").value,
+    coupon: parseFloat(document.getElementById("coupon").value),
+    yield: parseFloat(document.getElementById("yield").value),
+    face: parseFloat(document.getElementById("face").value),
+    years: parseInt(document.getElementById("years").value)
+  };
+
+  bonds.push(bond);
+  updateManualTable();
+
+  // Reset form
+  e.target.reset();
+});
+
+function updateManualTable() {
+  const tbody = document.querySelector("#manualTable tbody");
+  tbody.innerHTML = "";
+  bonds.forEach(bond => {
+    tbody.innerHTML += `
+      <tr>
+        <td>${bond.name}</td>
+        <td>${bond.coupon}</td>
+        <td>${bond.yield}</td>
+        <td>${bond.face}</td>
+        <td>${bond.years}</td>
+      </tr>
+    `;
+  });
+}
+
+// ========== Calculation ==========
+document.getElementById("calculateBtn").addEventListener("click", () => {
+  if (bonds.length === 0) {
+    alert("No bonds to calculate. Upload Excel or add manually.");
+    return;
+  }
+
+  const results = bonds.map(calcDurations);
+  displayResults(results);
+});
+
 function calcDurations(bond) {
   const c = (bond.coupon / 100) * bond.face;
   const y = bond.yield / 100;
@@ -58,10 +103,10 @@ function calcDurations(bond) {
   };
 }
 
-// Render results
 function displayResults(results) {
   const container = document.getElementById("results");
   let html = `
+    <h2>Results</h2>
     <table>
       <thead>
         <tr>
