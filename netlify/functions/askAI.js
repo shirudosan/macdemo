@@ -5,7 +5,6 @@ export async function handler(event, context) {
   try {
     const { prompt } = JSON.parse(event.body);
 
-    // Call Hugging Face Inference API
     const response = await fetch(
       "https://api-inference.huggingface.co/models/google/flan-t5-base",
       {
@@ -20,9 +19,24 @@ export async function handler(event, context) {
 
     const result = await response.json();
 
+    // Hugging Face sometimes returns an array, sometimes an object
+    let output = "";
+
+    if (Array.isArray(result)) {
+      // e.g., [{"generated_text": "blah"}]
+      output = result[0]?.generated_text || JSON.stringify(result);
+    } else if (result.generated_text) {
+      output = result.generated_text;
+    } else if (result[0]?.summary_text) {
+      // some summarization models
+      output = result[0].summary_text;
+    } else {
+      output = JSON.stringify(result, null, 2);
+    }
+
     return {
       statusCode: 200,
-      body: JSON.stringify({ output: result[0]?.generated_text || "No output" })
+      body: JSON.stringify({ output })
     };
 
   } catch (err) {
