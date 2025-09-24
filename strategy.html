@@ -157,7 +157,7 @@ fetch("/.netlify/functions/askAI", {
     } else if (data.error) {
       aiDiv.textContent = "Error from AI: " + data.error;
     } else {
-      aiDiv.textContent = "No response from AI.";
+      aiDiv.textContent = "Jasjit No response from AI.";
     }
   })
   .catch(err => { aiDiv.textContent = "Network Error: " + err; });
