@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Bond Strategy Analysis</title>
+  <title>Bond Strategy Simulator</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 </head>
 <body>
@@ -23,7 +23,7 @@
   <div id="aiOutput" style="margin-top:20px; border:1px solid #ccc; padding:10px;"></div>
 
   <script>
-    // Duration calculation
+    // --- Bond duration calculation ---
     function calculateDuration(couponRate, yieldRate, faceValue, years) {
       const y = yieldRate / 100;
       const c = couponRate / 100 * faceValue;
@@ -38,7 +38,7 @@
       return weightedSum / pvTotal;
     }
 
-    // Parse manual input
+    // --- Parse manual input ---
     function parseManualInput() {
       const lines = document.getElementById("manualInput").value.trim().split("\n");
       const bonds = [];
@@ -58,7 +58,7 @@
       return bonds;
     }
 
-    // Parse Excel file
+    // --- Parse Excel file ---
     function parseExcel(file, callback) {
       const reader = new FileReader();
       reader.onload = function(e) {
@@ -86,7 +86,7 @@
       reader.readAsArrayBuffer(file);
     }
 
-    // On button click
+    // --- Button click ---
     document.getElementById("calcBtn").addEventListener("click", function() {
       const outputDiv = document.getElementById("output");
       const aiDiv = document.getElementById("aiOutput");
@@ -106,7 +106,7 @@
       }
     });
 
-    // Run calculations and AI step
+    // --- Run calculations & AI call ---
     function runAnalysis(bonds) {
       const outputDiv = document.getElementById("output");
       const aiDiv = document.getElementById("aiOutput");
@@ -121,51 +121,42 @@
       let text = "Bond Analysis Results:\n\n";
       bonds.forEach(b => {
         const dur = calculateDuration(b.coupon, b.yield, b.face, b.years);
-        const value = b.face; // simplified portfolio value per bond
+        const value = b.face;
         totalValue += value;
         text += `${b.name}: Duration = ${dur.toFixed(2)} years | Face = ${value}\n`;
       });
       text += `\nPortfolio Value (approx): ${totalValue}\n`;
       outputDiv.textContent = text;
 
-      // --- AI prompt prep ---
+      // --- AI prompt ---
       const prompt = `
 Here is a bond portfolio:
 ${JSON.stringify(bonds, null, 2)}
 
-Please provide a detailed "what-if" strategy analysis.
+Please provide a detailed "what-if" strategy analysis:
 - Compare 'do nothing' vs. active strategies
 - Explain duration-based risk
 - Show portfolio value change under different interest rate scenarios
-      `;
-
-      // === Option A: Call your backend LLM ===
-      // fetch("/api/askAI", { method:"POST", body: JSON.stringify({ prompt }) })
-      //   .then(r => r.json())
-      //   .then(data => { aiDiv.textContent = data.output; });
-      // === Call Netlify function ===
-    // Call Netlify function
-fetch("/.netlify/functions/askAI", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ prompt })
-})
-  .then(r => r.json())
-  .then(data => {
-    if (data.output) {
-      aiDiv.textContent = "AI Analysis:\n\n" + data.output;
-    } else if (data.error) {
-      aiDiv.textContent = "Error from AI: " + data.error;
-    } else {
-      aiDiv.textContent = "Jasjit No response from AI.";
-    }
-  })
-  .catch(err => { aiDiv.textContent = "Network Error: " + err; });
-
-      // === Option B: Mock AI response (for demo only) ===
-      // aiDiv.textContent = "AI Strategy Analysis (mock):\n\nIf interest rates rise by 1%, portfolio value could drop by ~"
-      //   + (totalValue * 0.05).toFixed(0)
-      //   + ". Active strategy (shorter duration bonds) reduces risk compared to 'do nothing'.";
+`;
+      // --- Call Netlify function ---
+      fetch("/.netlify/functions/askAI", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt })
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.output) {
+          aiDiv.textContent = "AI Analysis:\n\n" + data.output;
+        } else if (data.raw) {
+          aiDiv.textContent = "Raw AI Response:\n\n" + JSON.stringify(data.raw, null, 2);
+        } else if (data.error) {
+          aiDiv.textContent = "Error from AI: " + data.error;
+        } else {
+          aiDiv.textContent = "No response from AI.";
+        }
+      })
+      .catch(err => { aiDiv.textContent = "Network Error: " + err; });
     }
   </script>
 </body>

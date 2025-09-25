@@ -10,14 +10,14 @@ export async function handler(event, context) {
       {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${process.env.HF_API_KEY}`,  // set this in Netlify env vars
+          "Authorization": `Bearer ${process.env.HF_API_KEY}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
           inputs: prompt,
           parameters: {
-            max_new_tokens: 300,   // limit length so it returns quickly
-            temperature: 0.7       // creativity vs determinism
+            max_new_tokens: 300,
+            temperature: 0.7
           }
         })
       }
@@ -25,16 +25,19 @@ export async function handler(event, context) {
 
     const result = await response.json();
 
+    // --- Robust parsing ---
     let output = "";
     if (Array.isArray(result) && result[0]?.generated_text) {
       output = result[0].generated_text;
+    } else if (result.error) {
+      output = "Error from Hugging Face: " + result.error;
     } else {
-      output = JSON.stringify(result, null, 2); // fallback for debugging
+      output = JSON.stringify(result, null, 2);
     }
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ output })
+      body: JSON.stringify({ output, raw: result })
     };
 
   } catch (err) {
